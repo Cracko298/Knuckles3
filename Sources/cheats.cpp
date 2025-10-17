@@ -13,9 +13,8 @@
 #include <cstdint>
 #include <random>
 
-namespace CTRPluginFramework
-{
-
+namespace CTRPluginFramework{
+    u32 const COORD_PAGE = 0x01E81000+0x6F0+0x24+0x20+0x14;
     u32 const NAME_PAGE = 0x01E81000+0x6F0+0x24;
     u32 const TEXT_PAGE = 0x01E81000+0x6F0;
     u32 const INVENTORY_PAGE = 0x01E81000;
@@ -362,6 +361,7 @@ namespace CTRPluginFramework
                     Process::WriteFloat(0x429CE4, zoomVal+myVal);
                 }
             } if (Controller::IsKeyPressed(Key::DPadDown)){
+                Process::ReadFloat(0x429CE4, zoomVal);
                 if (zoomVal <= minVal){
                     Process::WriteFloat(0x429CE4, minVal);
                 } else {
@@ -416,7 +416,7 @@ namespace CTRPluginFramework
         Process::Write32(0x00247418, insVal);
     }
 
-    void noItemLoss(MenuEntry *entry){
+    void nil(){
         u32 lsVal = 0xE320F000;
         Process::Write32(0x00145D04, lsVal);
         Process::Write32(0x00145D08, lsVal);
@@ -428,6 +428,10 @@ namespace CTRPluginFramework
         Process::Write32(0x00145E5C, lsVal);
         Process::Write32(0x00145E64, lsVal);
         Process::Write32(0x0014609C, lsVal);
+    }
+
+    void noItemLoss(MenuEntry *entry){
+        nil();
     }
 
     void hackerInventory(MenuEntry *entry){
@@ -545,20 +549,32 @@ namespace CTRPluginFramework
         }
     }
 
-    void walkThroughWalls(MenuEntry *entry){
+    void setCollision(){
         Process::Write32(0x482F28, 0xBDCCCCCD);
         Process::Write32(0x15FCE0, 0x3F800000);
         Process::Write32(0x12DBD0, 0x0A000002);
         Process::Write32(0x249F47, 0x00000043);
         Process::Write32(0x242214, 0xED800A08);
         Process::Write32(0x2421A4, 0x0A000016);
+    }
+
+    void removeCollision(){
+        Process::Write32(0x2421A4, 0xEA000016);
+        Process::Write32(0x242214, 0xEAFFFFE9);
+        Process::Write32(0x12DBD0, 0x1A000002);
+        Process::Write32(0x482F28, 0x00);
+        Process::Write32(0x4836B4, 0xFFFFFFFF);
+    }
+
+    void wtw(){
+        setCollision();
         if (Controller::IsKeyDown(Key::Y)){
-            Process::Write32(0x2421A4, 0xEA000016);
-            Process::Write32(0x242214, 0xEAFFFFE9);
-            Process::Write32(0x12DBD0, 0x1A000002);
-            Process::Write32(0x482F28, 0x00);
-            Process::Write32(0x4836B4, 0xFFFFFFFF);
+            removeCollision();
         }
+    }
+
+    void walkThroughWalls(MenuEntry *entry){
+        wtw();
     }
 
     void walkOnWater(MenuEntry *entry){
@@ -637,5 +653,103 @@ namespace CTRPluginFramework
         }
     }
 
+    void stalkEntities(MenuEntry *entry){
+        static bool stalkMode = false;
+        static int targetIndex = 0;
+        static int lastTargetIndex = -1;
+        static bool wasStalking = false;
 
+        u32 entityCrdStructAdd = 0x483754;
+        u32 playerCrdAdd = 0x482F0C;
+
+        if (Controller::IsKeysDown(Key::L | Key::B)){
+            if (stalkMode){
+                stalkMode = false;
+                OSD::Notify(Color::Red << "Stalk Mode: OFF");
+            }
+        }
+
+        if (Controller::IsKeysDown(Key::Y) && Controller::IsKeyPressed(Key::DPadLeft)){
+            targetIndex = (targetIndex - 1 + 0x0F) % 0x0F;
+        } if (Controller::IsKeysDown(Key::Y) && Controller::IsKeyPressed(Key::DPadRight)){
+            targetIndex = (targetIndex + 1) % 0x0F;
+        } if (Controller::IsKeysDown(Key::Y | Key::L | Key::DPadUp)){
+            if (!stalkMode){
+                stalkMode = true;
+                OSD::Notify(Color::Lime << "Stalk Mode: ON");
+            }
+        }
+
+        if (stalkMode){
+            u32 targetAddr = entityCrdStructAdd + (0x848 * targetIndex);
+            float coords[3];
+            Process::ReadFloat(targetAddr, coords[0]);
+            Process::ReadFloat(targetAddr + 0x4, coords[1]);
+            Process::ReadFloat(targetAddr + 0x8, coords[2]);
+            float offset = 0.5f; coords[0] += offset; coords[2] += offset;
+            Process::WriteFloat(playerCrdAdd, coords[0]);
+            Process::WriteFloat(playerCrdAdd + 0x4, coords[1]);
+            Process::WriteFloat(playerCrdAdd + 0x8, coords[2]);
+            if (targetIndex != lastTargetIndex){
+                OSD::Notify(Color::Cyan << "Stalking Entity/Player [" << targetIndex << "]");
+                lastTargetIndex = targetIndex;
+            }
+
+            wasStalking = true;
+        } else if (wasStalking){
+            OSD::Notify(Color::Red << "Stalking Stopped.");
+            wasStalking = false;
+            lastTargetIndex = -1;
+        }
+    }
+
+    void noClip(MenuEntry *entry){
+        u32 playerCoordAdd = 0x482F0C;
+        setCollision(); float coords[3];
+        Process::ReadFloat(playerCoordAdd, coords[0]);          // X
+        Process::ReadFloat(playerCoordAdd + 0x4, coords[1]);    // Y (not needed)
+        Process::ReadFloat(playerCoordAdd + 0x8, coords[2]);    // Z
+        if(Controller::IsKeysDown(Key::A | Key::DPadRight)){
+            removeCollision();
+            Process::WriteFloat(playerCoordAdd, coords[0]+2.0f);
+        } if(Controller::IsKeysDown(Key::A | Key::DPadLeft)){
+            removeCollision();
+            Process::WriteFloat(playerCoordAdd, coords[0]-2.0f);
+        } if(Controller::IsKeysDown(Key::A | Key::DPadUp)){
+            removeCollision();
+            Process::WriteFloat(playerCoordAdd+0x08, coords[2]-2.0f);
+        } if(Controller::IsKeysDown(Key::A | Key::DPadDown)){
+            removeCollision();
+            Process::WriteFloat(playerCoordAdd+0x08, coords[2]+2.0f);
+        }
+    }
+
+    void revivePlayer(MenuEntry *entry){
+        setCollision();
+        static bool hasRevived = false;
+        u32 playerCrdAdd = 0x482F0C;
+        u32 playerHpAdd  = 0x483614;
+
+        nil();
+        u32 playerHp;
+        Process::Read32(playerHpAdd, playerHp);
+        if (isPlayerDead() == true) {
+            Process::CopyMemory((void*)COORD_PAGE, (const void*)playerCrdAdd, 0x0C);
+            hasRevived = false;
+        } if (playerHp >= 0x63 && !hasRevived) {
+            removeCollision();
+            Process::CopyMemory((void*)playerCrdAdd, (const void*)COORD_PAGE, 0x0C);
+            OSD::Notify("Player has been Revived.");
+            hasRevived = true;
+        }
+    }
+
+    void aimbot(MenuEntry *entry){
+        u32 entityCrdStructAdd = 0x483754; u32 playerCrdAdd = 0x482F0C;
+        if (Controller::IsKeyDown(Key::R) && Controller::IsKeyDown(Key::Y)){
+            for (int i = 0; i < 0x0F; ++i) {
+                Process::CopyMemory((void*)entityCrdStructAdd+0x848*i, (const void*)playerCrdAdd, 0x0C);
+            }
+        }
+    }
 }

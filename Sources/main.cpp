@@ -105,6 +105,7 @@ exit:
         inventoryFolder->Append(dropsFolder);
 
         statusFolder->Append(new MenuEntry("Faster Load Times", fasterLoading, "Disables a timer for Loading, should be near instantanious for loading now."));
+        statusFolder->Append(new MenuEntry("Revive Player", revivePlayer, "Revives the Player if they die. In the same spot, and nothing lost."));
         statusFolder->Append(new MenuEntry("All Status' Max", allStatusMax, "A very advanced version of Maxing Stats."));
         statusFolder->Append(new MenuEntry("Max Health", maxHealth, "Gives the Player, the most amount of Health."));
         statusFolder->Append(new MenuEntry("Max Food", maxFood, "Gives the Player, the most amount of Food."));
@@ -139,12 +140,16 @@ exit:
         }));
         
         movementFolder->Append(new MenuEntry("No Engine Parts Needed", noEnginePartsNeeded, "Helicopters no longer require Engine Parts for you."));
+        movementFolder->Append(new MenuEntry("Stalk Players/Entities", stalkEntities, "Start Stalking: L+DPadUp+UP\nScroll Entities: Y+DPadLeft/Right\nStop Stalking: L+B\n\nHighly suggest to use 'Walk Through Walls' with this Code."));
         movementFolder->Append(new MenuEntry("Walk Through Walls", walkThroughWalls, "Walk Through Walls/Terrain with 'Y'."));
         movementFolder->Append(new MenuEntry("X-Ray the World", xrayWorld, "Hold 'Y' to X-Ray all Terrain/Meshes (not entities)."));
         movementFolder->Append(new MenuEntry("No Fuel Needed", noFuelNeeded, "You can drive any vehcile without fuel. Yes, this includes the dogsled."));
         movementFolder->Append(new MenuEntry("Car-Speed Hack", carSpeedHack, "Press 'B' to Start a Vehcile, and hold for an increase in Speed. Press 'X' to go super-fast while in this Mode. Press 'A' to exit the Mode."));
         movementFolder->Append(new MenuEntry("Walk on Water", walkOnWater, "Walk on Water (Always stay above Water)."));
         movementFolder->Append(new MenuEntry("MoonJump", moonJump, "MoonJump by pressing 'L'."));
+        movementFolder->Append(new MenuEntry("No-Clip", noClip, "No-Clip: A+DPad\n\nHighly suggest to use MoonJump with this Code."));
+
+        weaponsFolder->Append(new MenuEntry("Aimbot", aimbot, "Shoot normally, and you'll shoot everything."));
 
         
         // codesFolder->Append(new MenuEntry("Drop Everything In-Hand", dropEverything));
@@ -190,6 +195,7 @@ exit:
         menu += inventoryFolder;
         menu += textFolder;
         menu += movementFolder;
+        menu += weaponsFolder;
     }
 
     int main(void)

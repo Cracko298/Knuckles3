@@ -36,7 +36,14 @@ namespace CTRPluginFramework
     void walkThroughWalls(MenuEntry *entry);
     void moonJump(MenuEntry *entry);
     void carSpeedHack(MenuEntry *entry);
+    void noClip(MenuEntry *entry);
+    void stalkEntities(MenuEntry *entry);
+    void aimbot(MenuEntry *entry);
+    void revivePlayer(MenuEntry *entry);
+    void noClip(MenuEntry *entry);
     void setCarHackSpeed();
+    void nil();
+    void wtw();
     void setMoonJump();
     void nameChanger();
     // decl bools, ints, etc
