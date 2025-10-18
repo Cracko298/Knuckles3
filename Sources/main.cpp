@@ -149,7 +149,10 @@ exit:
         movementFolder->Append(new MenuEntry("MoonJump", moonJump, "MoonJump by pressing 'L'."));
         movementFolder->Append(new MenuEntry("No-Clip", noClip, "No-Clip: A+DPad\n\nHighly suggest to use MoonJump with this Code."));
 
-        weaponsFolder->Append(new MenuEntry("Aimbot", aimbot, "Shoot normally, and you'll shoot everything."));
+        weaponsFolder->Append(new MenuEntry("Rapid Fire", rapidFire, "Rapid Fire on all Weapons."));
+        weaponsFolder->Append(new MenuEntry("No Reload", noReload, "No Reload on all Weapons."));
+        weaponsFolder->Append(new MenuEntry("No Recoil", noRecoil, "No Recoil on all Weapons."));
+        weaponsFolder->Append(new MenuEntry("Aimbot", aimbot, "Shoot normally, and you'll shoot all Entities/Players."));
 
         
         // codesFolder->Append(new MenuEntry("Drop Everything In-Hand", dropEverything));

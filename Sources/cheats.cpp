@@ -746,10 +746,40 @@ namespace CTRPluginFramework{
 
     void aimbot(MenuEntry *entry){
         u32 entityCrdStructAdd = 0x483754; u32 playerCrdAdd = 0x482F0C;
-        if (Controller::IsKeyDown(Key::R) && Controller::IsKeyDown(Key::Y)){
+        if (Controller::IsKeysDown(Key::R | Key::Y)){
             for (int i = 0; i < 0x0F; ++i) {
                 Process::CopyMemory((void*)entityCrdStructAdd+0x848*i, (const void*)playerCrdAdd, 0x0C);
             }
+        }
+    }
+
+    void noReload(MenuEntry *entry) {
+        if (Controller::IsKeysDown(Key::R | Key::Y)){
+            for (int i = 0; i < 0x5; ++i) {
+                u32 base = 0x429610 + (0x3C * i); u32 ptr;
+                Process::Read32(base, ptr);        
+                if (ptr != 0x00) {
+                    Process::Write16(ptr + 0xC8, 0x00);
+                }
+            }
+        }
+    }
+
+    void rapidFire(MenuEntry *entry){
+        if (Controller::IsKeysDown(Key::R | Key::Y)){
+            for (int i = 0; i < 0x5; ++i) {
+                u32 base = 0x429610 + (0x3C * i); u32 ptr;
+                Process::Read32(base, ptr);        
+                if (ptr != 0x00) {
+                    Process::Write32(ptr + 0x6C, 0x00);
+                }
+            }
+        }
+    }
+
+    void noRecoil(MenuEntry *entry){
+        if (Controller::IsKeysDown(Key::R | Key::Y)){
+            Process::Write32(0x00482FE4, 0x00);
         }
     }
 }

@@ -41,6 +41,9 @@ namespace CTRPluginFramework
     void aimbot(MenuEntry *entry);
     void revivePlayer(MenuEntry *entry);
     void noClip(MenuEntry *entry);
+    void rapidFire(MenuEntry *entry);
+    void noReload(MenuEntry *entry);
+    void noRecoil(MenuEntry *entry);
     void setCarHackSpeed();
     void nil();
     void wtw();
