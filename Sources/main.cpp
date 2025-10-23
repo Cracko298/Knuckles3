@@ -87,6 +87,8 @@ exit:
         MenuFolder *statusExtraFolder = new MenuFolder("Extras");
         MenuFolder *miniGameFolder = new MenuFolder("Mini-Game Codes"); //  Maybe move MiniGame and Disable Codes to a Misc Folder? And shorten the list for stuff not related to stats. i.e. subfolder called "Extras" or sum...
         MenuFolder *disableFolder = new MenuFolder("Disable Codes");
+        MenuFolder *serverFolder = new MenuFolder("Server Codes");
+
         statusFolder->Append(statusExtraFolder);
         // statusFolder->Append(miniGameFolder); // add these to new location... misc
         // statusFolder->Append(disableFolder); // that includes this one too...
@@ -103,6 +105,10 @@ exit:
         MenuFolder *slotFolder = new MenuFolder("Slot Codes"); //           Slots belonged under Inv ngl...
         inventoryFolder->Append(slotFolder);
         inventoryFolder->Append(dropsFolder);
+
+        MenuFolder *miscFolder = new MenuFolder("Miscellaneous Codes");
+        miscFolder->Append(miniGameFolder);
+        miscFolder->Append(disableFolder);
 
         statusFolder->Append(new MenuEntry("Faster Load Times", fasterLoading, "Disables a timer for Loading, should be near instantanious for loading now."));
         statusFolder->Append(new MenuEntry("Revive Player", revivePlayer, "Revives the Player if they die. In the same spot, and nothing lost."));
@@ -140,7 +146,7 @@ exit:
         }));
         
         movementFolder->Append(new MenuEntry("No Engine Parts Needed", noEnginePartsNeeded, "Helicopters no longer require Engine Parts for you."));
-        movementFolder->Append(new MenuEntry("Stalk Players/Entities", stalkEntities, "Start Stalking: L+DPadUp+UP\nScroll Entities: Y+DPadLeft/Right\nStop Stalking: L+B\n\nHighly suggest to use 'Walk Through Walls' with this Code."));
+        movementFolder->Append(new MenuEntry("Stalk Players/Entities", stalkEntities, "Start Stalking: L+DPadUp+Y\nScroll Entities: Y+DPadLeft/Right\nStop Stalking: L+B\n\nHighly suggest to use 'Walk Through Walls' with this Code."));
         movementFolder->Append(new MenuEntry("Walk Through Walls", walkThroughWalls, "Walk Through Walls/Terrain with 'Y'."));
         movementFolder->Append(new MenuEntry("X-Ray the World", xrayWorld, "Hold 'Y' to X-Ray all Terrain/Meshes (not entities)."));
         movementFolder->Append(new MenuEntry("No Fuel Needed", noFuelNeeded, "You can drive any vehcile without fuel. Yes, this includes the dogsled."));
@@ -149,10 +155,20 @@ exit:
         movementFolder->Append(new MenuEntry("MoonJump", moonJump, "MoonJump by pressing 'L'."));
         movementFolder->Append(new MenuEntry("No-Clip", noClip, "No-Clip: A+DPad\n\nHighly suggest to use MoonJump with this Code."));
 
+        weaponsFolder->Append(new MenuEntry("Heal/HP Knife", healKnife, "If a Knife is placed in the first slot, and used. It will give Players' HP instead of Damaging them."));
         weaponsFolder->Append(new MenuEntry("Rapid Fire", rapidFire, "Rapid Fire on all Weapons."));
         weaponsFolder->Append(new MenuEntry("No Reload", noReload, "No Reload on all Weapons."));
         weaponsFolder->Append(new MenuEntry("No Recoil", noRecoil, "No Recoil on all Weapons."));
         weaponsFolder->Append(new MenuEntry("Aimbot", aimbot, "Shoot normally, and you'll shoot all Entities/Players."));
+
+        miscFolder->Append(new MenuEntry("Spam Door Sounds", spamDoorSounds, "Spam the Door sound. Online, and offline."));
+        
+        serverFolder->Append(new MenuEntry("Kick Players from Game", nullptr, [](MenuEntry *entry){
+            selectPlayerToKick();
+        }));
+        serverFolder->Append(new MenuEntry("Server Locker", serverLocker, "Lock Server: A+DPadUp.\nUnlock Server: A+DPadDown."));
+        serverFolder->Append(new MenuEntry("Clone Servers", cloneServers, "Press 'start' after you Create a Server."));
+
 
         
         // codesFolder->Append(new MenuEntry("Drop Everything In-Hand", dropEverything));
@@ -199,6 +215,9 @@ exit:
         menu += textFolder;
         menu += movementFolder;
         menu += weaponsFolder;
+        menu += miscFolder;
+        menu += serverFolder;
+
     }
 
     int main(void)

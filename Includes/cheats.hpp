@@ -44,6 +44,12 @@ namespace CTRPluginFramework
     void rapidFire(MenuEntry *entry);
     void noReload(MenuEntry *entry);
     void noRecoil(MenuEntry *entry);
+    void spamDoorSounds(MenuEntry *entry);
+    void healKnife(MenuEntry *entry);
+    void serverLocker(MenuEntry *entry);
+    void cloneServers(MenuEntry *entry);
+    std::vector<u32> findStruct();
+    void selectPlayerToKick();
     void setCarHackSpeed();
     void nil();
     void wtw();

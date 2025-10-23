@@ -138,22 +138,16 @@ namespace CTRPluginFramework{
             return;
         }
 
-
         replaceSymbols(textAdd);
         newLines(textAdd);
         if (Controller::IsKeyPressed(Key::DPadDown)){
-            for (int i = 0; i < 20; ++i)
-            {
+            for (int i = 0; i < 20; ++i){
                 u8 c;
                 Process::Read8(textAdd + i, c);
-
-                if (c == 0x00)
-                {
-                    if (i > 0)
-                    {
+                if (c == 0x00){
+                    if (i > 0){
                         u8 prevChar;
                         Process::Read8(textAdd + (i - 1), prevChar);
-
                         if (prevChar >= 'a' && prevChar <= 'z')
                             prevChar -= 32;
 
@@ -782,4 +776,159 @@ namespace CTRPluginFramework{
             Process::Write32(0x00482FE4, 0x00);
         }
     }
+
+    std::vector<u32> findStruct() {
+        static const u32 sAdd = 0x4906F8;          // Base Offset
+        static const u32 lpAm = 0x204;             // Amount of Itterations the Struct Exists For.
+        static const u32 entrySize = 0x7C;         // Struct Size Per-Item/Entity
+        static const u32 doorCheckOffset = 0x1C;   // Offset to ID
+
+        std::vector<u32> doorAddresses;
+
+        for (u32 i = 0; i < lpAm; i++) {
+            u32 checkDoorVal = 0;
+            u32 baseAddress = sAdd + (entrySize * i);
+            Process::Read32(baseAddress + 0x0C + doorCheckOffset, checkDoorVal);
+
+            if (checkDoorVal == 0x01) {
+                doorAddresses.push_back(baseAddress);
+            }
+        }
+
+        return doorAddresses;
+    }
+
+    void spamDoorSounds(MenuEntry *entry) {
+        std::vector<u32> doorAddresses = findStruct();
+        for (u32 addr : doorAddresses){
+            Process::Write32(addr+0x0C+0x1C+0x08, 0x01); // baseAddress + Tuple Coords + Offset To ID + Offset to Sound.Play()
+        }
+    }
+
+    u16 getPlayerCount(){
+        static u16 playerCount;
+        Process::Read16(0x8FD8A90, playerCount);
+        return playerCount; // Inlcudes the Player themselves...
+    }
+
+    std::map<std::string, u32> buildPlayerDictionary() {
+        std::map<std::string, u32> playerDict;
+        const u32 baseAddr = 0x483EC6;
+        const u32 entrySize = 0x748;
+        const u32 maxNameLen = 16;
+
+        u32 playerCount = 0x07;
+        if (playerCount == 0)
+            return playerDict;
+
+        for (u32 i = 0; i <= playerCount; i++) {
+            u32 currentAddr = baseAddr + (i * entrySize);
+            std::string name;
+
+            for (u32 j = 0; j < maxNameLen; j++) {
+                u8 c;
+                if (!Process::Read8(currentAddr + (j * 2), c))
+                    continue;
+
+                if (c != 0x00)
+                    name += static_cast<char>(c); // only take the first byte of UTF-16LE
+            }
+
+            if (!name.empty())
+                playerDict[name] = currentAddr;
+        }
+
+        return playerDict;
+    }
+
+    void kickPlayer(u32 index){
+        u32 val = 0x000000FD;
+        OSD::Notify(Color::Red << Utils::Format("Kicked Player: %u.", index));
+        if (index == 0x00){
+            Process::Write32(0x8E4BCD0, val);
+        } if (index == 0x01) {
+            Process::Write32(0x8E4BD48, val);
+        } if (index == 0x02) {
+            Process::Write32(0x8E4BDC0, val);
+        } if (index == 0x03) {
+            Process::Write32(0x8E4BE38, val);
+        } if (index == 0x04) {
+            Process::Write32(0x8E4BEB0, val);
+        } if (index == 0x05) {
+            Process::Write32(0x8E4BF28, val);
+        } if (index == 0x06) {
+            Process::Write32(0x8E4BFA0, val);
+        }
+    }
+
+    void selectPlayerToKick() {
+        auto playerDict = buildPlayerDictionary();
+        if (playerDict.empty()) {
+            OSD::Notify("No Players Found.");
+            return;
+        }
+
+        std::vector<std::string> names;
+        std::vector<u32> addresses;
+        for (auto &pair : playerDict) {
+            names.push_back(pair.first);
+            addresses.push_back(pair.second);
+        }
+
+        Keyboard kb("Select a Player to Kick:");
+        kb.Populate(names);
+        int selection = kb.Open();
+        if (selection < 0)
+            return;
+
+        std::string chosenName = names[selection];
+        u32 chosenAddr = addresses[selection];
+        OSD::Notify(Utils::Format("Selected: %s.", chosenName.c_str()));
+        kickPlayer(selection);
+    }
+
+    void healKnife(MenuEntry *entry){
+        u8 itemID; u32 slotID;
+        Process::Read8(0x429601, itemID);
+        Process::Read32(0x4294AC, slotID);
+
+        if (itemID == 0x0E && slotID == 0x00){
+            Process::Write32(0x12494C, 0xE3A000FF);
+        } else {
+            Process::Write32(0x12494C, 0xE5D800D9);
+        }
+    }
+
+    void serverLocker(MenuEntry *entry){
+        static bool serverLocked = false; u16 playerCount = getPlayerCount();
+        if (Controller::IsKeyDown(Key::A) && Controller::IsKeyPressed(Key::DPadUp)){
+            serverLocked = true;
+            OSD::Notify(Color::Red << "Server Status: Locked.");
+        } if (Controller::IsKeyDown(Key::A) && Controller::IsKeyPressed(Key::DPadDown)){
+            serverLocked = false;
+            OSD::Notify(Color::Lime << "Server Status: Unlocked.");
+            Process::Write16(0x8FD8A90, 0x01);
+            Process::Write16(0x8FD8A92, 0x08);
+        } if (serverLocked == true){
+            Process::Write16(0x8FD8A90, 0xFF);
+            Process::Write16(0x8FD8A92, 0xFF);
+        }
+    }
+
+    void cloneServers(MenuEntry *entry){
+        u32 val = 0xFFFFFFFF; u32 oVal;
+        if (Controller::IsKeyPressed(Key::Start)){
+            Process::Write32(0x8E48A50, val);
+            Process::Write32(0x8FF5C48, 0x00);
+            Process::Write32(0x8FF5F74, 0x00);
+            Process::Write32(0x8FF69C4, 0x00);
+            Process::Write32(0x90017F4, 0x00);
+            Process::Read32(0x8E48A50, oVal);
+            if (oVal == val){
+                Process::Write32(0x8FF1A58, val);
+                OSD::Notify(Color::Red << "Server Cloned Successfully.");
+            }
+        }
+    }
+
 }
