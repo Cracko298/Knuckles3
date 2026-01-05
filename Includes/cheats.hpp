@@ -55,6 +55,8 @@ namespace CTRPluginFramework
     void wtw();
     void setMoonJump();
     void nameChanger();
+    void getItem();
+    void initItemDatabase();
     // decl bools, ints, etc
 }
 #endif

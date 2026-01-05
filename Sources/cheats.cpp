@@ -8,19 +8,160 @@
 #include <unordered_map>
 #include <sstream>
 #include <algorithm>
+#include <string>
 #include <iomanip>
 #include <cstring>
 #include <cstdint>
 #include <random>
 
 namespace CTRPluginFramework{
-    u32 const COORD_PAGE = 0x01E81000+0x6F0+0x24+0x20+0x14;
-    u32 const NAME_PAGE = 0x01E81000+0x6F0+0x24;
-    u32 const TEXT_PAGE = 0x01E81000+0x6F0;
-    u32 const INVENTORY_PAGE = 0x01E81000;
+    u32 const INV_PAGE = 0x01E81000;
+    u32 const TEXT_PAGE = INV_PAGE+0x6F0;
+    u32 const NAME_PAGE = TEXT_PAGE+0x24;
+    u32 const COORD_PAGE = NAME_PAGE+0x58;
+    u32 const CALL_PAGE = COORD_PAGE;
+    
     float static moonJumpVar = 2.0;
     float static carSpeedSlow = 5.0;
     float static carSpeedFast = 32.0;
+
+    enum class ItemCategory {
+        Empty,
+        Weapons,
+        Ammo,
+        Consumables,
+        Tools,
+        Clothing,
+        Misc
+    };
+
+    struct Item {
+        u8 id;
+        std::string name;
+        ItemCategory category;
+        bool stackable;
+    };
+
+    std::string toLower(std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(),
+                        [](unsigned char c) { return std::tolower(c); });
+        return str;
+    }
+
+    std::unordered_map<uint8_t, Item> *itemDatabase = nullptr;
+
+    void initItemDatabase(){
+        itemDatabase = new std::unordered_map<uint8_t, Item> ({
+            {0x00, {0x00, "Empty", ItemCategory::Empty, false}},
+
+            // Weapons
+            {0x01, {0x01, "Basic Handgun", ItemCategory::Weapons, false}},
+            {0x02, {0x02, "Arctic Handgun", ItemCategory::Weapons, false}},
+            {0x03, {0x03, "Arctic Eagle Handgun", ItemCategory::Weapons, false}},
+            {0x04, {0x04, "Double Barrel Shotgun", ItemCategory::Weapons, false}},
+            {0x05, {0x05, "Hunting Shotgun", ItemCategory::Weapons, false}},
+            {0x06, {0x06, "Arctic Hunting Shotgun", ItemCategory::Weapons, false}},
+            {0x07, {0x07, "Hunting Rifle", ItemCategory::Weapons, false}},
+            {0x08, {0x08, "Scout Hunting Rifle", ItemCategory::Weapons, false}},
+            {0x09, {0x09, "Arctic Hunting Rifle", ItemCategory::Weapons, false}},
+            {0x0A, {0x0A, "Crossbow", ItemCategory::Weapons, false}},
+            {0x0B, {0x0B, "Hunting Crossbow", ItemCategory::Weapons, false}},
+            {0x0C, {0x0C, "Arctic Hunting Crossbow", ItemCategory::Weapons, false}},
+            {0x0D, {0x0D, "Tranquilizer Gun", ItemCategory::Weapons, false}},
+            {0x0E, {0x0E, "Hunting Knife", ItemCategory::Weapons, false}},
+            {0x45, {0x45, "Flamethrower", ItemCategory::Weapons, false}},
+            {0x46, {0x46, "Ray Gun", ItemCategory::Weapons, false}},
+            {0x47, {0x47, "Flare Gun", ItemCategory::Weapons, false}},
+
+            // Ammo
+            {0x0F, {0x0F, "Pistol Ammo", ItemCategory::Ammo, true}},
+            {0x10, {0x10, "Shotgun Ammo", ItemCategory::Ammo, true}},
+            {0x11, {0x11, "Rifle Ammo", ItemCategory::Ammo, true}},
+            {0x12, {0x12, "Crossbow Bolts (Ammo)", ItemCategory::Ammo, true}},
+            {0x13, {0x13, "Tranquilizer Ammo", ItemCategory::Ammo, true}},
+
+            // Consumables
+            {0x1D, {0x1D, "Water Bottle", ItemCategory::Consumables, false}},
+            {0x1E, {0x1E, "Snackbar", ItemCategory::Consumables, false}},
+            {0x1F, {0x1F, "Tuna", ItemCategory::Consumables, false}},
+            {0x20, {0x20, "Beans", ItemCategory::Consumables, false}},
+            {0x21, {0x21, "Corned Beef", ItemCategory::Consumables, false}},
+            {0x22, {0x22, "Large Water Bottle", ItemCategory::Consumables, false}},
+            {0x23, {0x23, "Mint Cake", ItemCategory::Consumables, false}},
+            {0x24, {0x24, "Antiseptic", ItemCategory::Consumables, false}},
+            {0x25, {0x25, "Antibiotics", ItemCategory::Consumables, false}},
+            {0x26, {0x26, "Bandage", ItemCategory::Consumables, false}},
+            {0x27, {0x27, "Dressing", ItemCategory::Consumables, false}},
+            {0x28, {0x28, "Large Bandage", ItemCategory::Consumables, false}},
+            {0x29, {0x29, "Large Dressing", ItemCategory::Consumables, false}},
+            {0x3F, {0x3F, "Cooked Goose", ItemCategory::Consumables, true}},
+            {0x42, {0x42, "Cooked Fish", ItemCategory::Consumables, true}},
+
+            // Tools
+            {0x14, {0x14, "Matches", ItemCategory::Tools, true}},
+            {0x15, {0x15, "Fuel", ItemCategory::Tools, false}},
+            {0x16, {0x16, "Binoculars", ItemCategory::Tools, false}},
+            {0x17, {0x17, "Cooking Stove", ItemCategory::Tools, false}},
+            {0x18, {0x18, "Bear Trap", ItemCategory::Tools, false}},
+            {0x19, {0x19, "Fishing Rod", ItemCategory::Tools, false}},
+            {0x1A, {0x1A, "Field Binoculars", ItemCategory::Tools, false}},
+            {0x1B, {0x1B, "Professional Fishing Rod", ItemCategory::Tools, false}},
+            {0x1C, {0x1C, "Metal Detector", ItemCategory::Tools, false}},
+
+            // Clothing
+            {0x2A, {0x2A, "Jacket", ItemCategory::Clothing, false}},
+            {0x2B, {0x2B, "Trousers", ItemCategory::Clothing, false}},
+            {0x2C, {0x2C, "Backpack", ItemCategory::Clothing, false}},
+            {0x2D, {0x2D, "Cammo Jacket", ItemCategory::Clothing, false}},
+            {0x2E, {0x2E, "Cammo Trousers", ItemCategory::Clothing, false}},
+            {0x2F, {0x2F, "Cammo Backpack", ItemCategory::Clothing, false}},
+            {0x30, {0x30, "Military Jacket", ItemCategory::Clothing, false}},
+            {0x31, {0x31, "Military Trousers", ItemCategory::Clothing, false}},
+            {0x32, {0x32, "Military Backpack", ItemCategory::Clothing, false}},
+            {0x33, {0x33, "Kevlar Jacket", ItemCategory::Clothing, false}},
+            {0x34, {0x34, "Kevlar Trousers", ItemCategory::Clothing, false}},
+            {0x35, {0x35, "Kevlar Backpack", ItemCategory::Clothing, false}},
+            {0x36, {0x36, "Arctic Jacket", ItemCategory::Clothing, false}},
+            {0x37, {0x37, "Arctic Trousers", ItemCategory::Clothing, false}},
+            {0x38, {0x38, "Arctic Backpack", ItemCategory::Clothing, false}},
+            {0x39, {0x39, "Blink Jacket", ItemCategory::Clothing, false}},
+            {0x3A, {0x3A, "Bling Trousers", ItemCategory::Clothing, false}},
+            {0x3B, {0x3B, "Bling Backpack", ItemCategory::Clothing, false}},
+
+            // Misc
+            {0x3C, {0x3C, "Tent", ItemCategory::Misc, false}},
+            {0x3D, {0x3D, "Logs", ItemCategory::Misc, true}},
+            {0x3E, {0x3E, "Goose", ItemCategory::Misc, true}},
+            {0x40, {0x40, "Minnow", ItemCategory::Misc, true}},
+            {0x41, {0x41, "Large Fish", ItemCategory::Misc, true}},
+            {0x43, {0x43, "Engine Part", ItemCategory::Misc, false}},
+            {0x44, {0x44, "Snowboard", ItemCategory::Misc, false}},
+        });
+    }
+
+    std::vector<Item> getItemsByCategory(ItemCategory category) {
+        std::vector<Item> result;
+        for (const auto& pair : *itemDatabase) {
+            const Item& item = pair.second;
+            if (item.category == category)
+                result.push_back(item);
+        }
+        return result;
+    }
+
+    std::vector<Item> searchItems(const std::string& searchText) {
+        std::vector<Item> results;
+        std::string query = toLower(searchText);
+    
+        for (const auto& pair : *itemDatabase) {
+            const Item& item = pair.second;
+            std::string itemNameLower = toLower(item.name);
+            if (itemNameLower.find(query) != std::string::npos) {
+                results.push_back(item);
+            }
+        }
+        return results;
+    }
 
     bool isPlayerDead(){
         u32 hpVal;
@@ -71,7 +212,7 @@ namespace CTRPluginFramework{
         return -1.0f;
     }
 
-    void ClearBuffer(u32 address, size_t length){
+    void clearBuffer(u32 address, size_t length){
         for (size_t i = 0; i < length; ++i)
             Process::Write8(address + i, 0x00);
 
@@ -180,34 +321,34 @@ namespace CTRPluginFramework{
             Process::ReadString(textAdd + 0x04, commandInfo, 0x10, StringFormat::Utf8);
             u32 hpVal = std::stoi(commandInfo);
             Process::Write32(hpAdd, hpVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         } if (commandPrefix == ".spn") {
             // do stuff eventually
         } if (commandPrefix == ".wtr") {
             Process::ReadString(textAdd + 0x04, commandInfo, 0x10, StringFormat::Utf8);
             u32 wtrVal = std::stoi(commandInfo);
             Process::Write32(wtrAdd, wtrVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         } if (commandPrefix == ".tmp") {
             Process::ReadString(textAdd + 0x04, commandInfo, 0x10, StringFormat::Utf8);
             float tempVal = std::stof(commandInfo);
             Process::WriteFloat(tempAdd, tempVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         } if (commandPrefix == ".hng") {
             Process::ReadString(textAdd + 0x04, commandInfo, 0x10, StringFormat::Utf8);
             u32 hngVal = std::stoi(commandInfo);
             Process::Write32(hngAdd, hngVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         } if (commandPrefix == ".bat") {
             Process::ReadString(textAdd + 0x04, commandInfo, 0x10, StringFormat::Utf8);
             u32 batVal = std::stoi(commandInfo);
             Process::Write32(batAdd, batVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         } if (commandPrefix == ".tim") {
             Process::ReadString(textAdd + 0x04, commandInfo, 0x04, StringFormat::Utf8);
             float timeVal = GetFloatFromTime(commandInfo);
             Process::WriteFloat(timeAdd, timeVal);
-            ClearBuffer(textAdd, 20);
+            clearBuffer(textAdd, 20);
         }
     }
 
@@ -374,7 +515,7 @@ namespace CTRPluginFramework{
 
     void copyPasteInventory(MenuEntry *entry){
         const u32 srcAddr1 = 0x00429600;
-        const u32 dstAddr1 = INVENTORY_PAGE;
+        const u32 dstAddr1 = INV_PAGE;
         const u32 dataSize = 0x6F0;
         const u32 wordCount = dataSize / 0x04;
         if (Controller::IsKeyDown(Key::Y)){
@@ -803,6 +944,71 @@ namespace CTRPluginFramework{
         for (u32 addr : doorAddresses){
             Process::Write32(addr+0x0C+0x1C+0x08, 0x01); // baseAddress + Tuple Coords + Offset To ID + Offset to Sound.Play()
         }
+    }
+
+    void getItem() {
+        u8 itemStackVal; u32 durabilityVal; u32 amountVal;
+        std::vector<std::string> menuOptions;
+        Keyboard menuKb("Chose an Item Search Option.");
+        menuOptions.push_back("Item Categories");
+        menuOptions.push_back("Search for Item");
+        menuKb.Populate(menuOptions);
+        int mChoice = menuKb.Open();
+        std::vector<Item> results;
+
+        if (mChoice == 0) {
+            std::vector<std::string> categories = {"Empty", "Weapons", "Ammo", "Consumables", "Tools", "Clothing", "Misc"};
+            Keyboard catKb("Select a Category:");
+            catKb.Populate(categories);
+            int catIndex = catKb.Open();
+            if (catIndex < 0) return;
+            results = getItemsByCategory(static_cast<ItemCategory>(catIndex));
+        } else if (mChoice == 1) {
+            Keyboard inputKb("Search for an Item Name:");
+            std::string searchText;
+            if (inputKb.Open(searchText) != 0 || searchText.empty()) return;
+            results = searchItems(searchText);
+        } else return;
+
+        if (results.empty()) {
+            OSD::Notify("No items found.");
+            return;
+        }
+
+        std::vector<std::string> itemNames;
+        for (const auto &item : results) itemNames.push_back(item.name);
+
+        Keyboard selectKb("Select an Item:");
+        selectKb.Populate(itemNames);
+        int index = selectKb.Open();
+        if (index < 0) return;
+
+        u8 selectedItemId = results[index].id;
+        std::string itemString = results[index].name;
+        itemStackVal = results[index].stackable ? 4 : 3;
+
+        durabilityVal = 100;
+        amountVal = 1;
+
+        Keyboard durabilityKb("Durability (Decimal):");
+        durabilityKb.IsHexadecimal(false);
+        durabilityKb.Open(durabilityVal);
+
+        Keyboard amountKb(Utils::Format("How Many %s?", itemString.c_str()));
+        amountKb.IsHexadecimal(false);
+        amountKb.Open(amountVal);
+
+        Process::Write8(0x429600, itemStackVal);
+        Process::Write8(0x429601, selectedItemId);
+        Process::Write16(0x429602, 255);
+        Process::Write32(0x429604, amountVal);
+        Process::Write32(0x429608, durabilityVal);
+        Process::Write32(0x429610, 0x00);
+
+        OSD::Notify(Utils::Format("Gave Player Item: %s", itemString.c_str()));
+        OSD::Notify(Utils::Format("Selected Item ID: %u", selectedItemId));
+        OSD::Notify(Utils::Format("Durability: %u", durabilityVal));
+        OSD::Notify(Utils::Format("Amount: %u", amountVal));
     }
 
     u16 getPlayerCount(){

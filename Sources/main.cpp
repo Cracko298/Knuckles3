@@ -126,7 +126,10 @@ exit:
         statusExtraFolder->Append(new MenuEntry("See All Names", seeAllNames, "See the names of all Players, as if they where friendly/waved to you."));
         statusExtraFolder->Append(new MenuEntry("HotKey'd IDs", showHideAllIDs, "Changes the IDs and Names via HotKeys.\n\nA = Show Player Names.\nY = Show Player IDs."));
         statusExtraFolder->Append(new MenuEntry("Auto Heal", autoHeal, "Automatically heals the Player to 100hp, if the Player is below 25hp."));
-        
+
+        inventoryFolder->Append(new MenuEntry("Give Player an Item", nullptr, [](MenuEntry *entry){
+            getItem();
+        }));
         inventoryFolder->Append(new MenuEntry("Copy/Paste Inventory", copyPasteInventory, "Copy your Inventory from one Save to Another. You need to be in-game to copy/paste. Then Save your Game.\n\nY-DPadUp = Copy SaveGame Inv.\nY-DPadDown = Paste SaveGame Inv."));
         inventoryFolder->Append(new MenuEntry("Keep Items After Death", noItemLoss, "If the player somehow dies, this will keep all items inside their Inventory."));
         inventoryFolder->Append(new MenuEntry("Unlock all Outfits", unlockAllOutfits, "Unlocks all outfits in-game"));
@@ -231,6 +234,7 @@ exit:
         OSD::Notify("Plugin has Loaded Successfully.");
 
         menu->ShowWelcomeMessage(false);
+        initItemDatabase();
         menu->Run();
         delete menu;
         OnProcessExit();
